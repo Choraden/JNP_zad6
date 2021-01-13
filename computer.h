@@ -4,18 +4,18 @@
 
 class Computer {
 public:
-    Computer (uint64_t size) : mem(size) {}
+    Computer (uint64_t size) : memory(size) {}
 
     void boot(const program& p) {
         p.execute(mem);
     }
 
     void memory_dump(std::stringstream& ss) const {
-            mem.memory_dump(ss);
+            memory.memory_dump(ss);
     }
 
 private:
-    Memory mem;
+    Memory memory;
 };
 
 #endif // COMPUTER_H

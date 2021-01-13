@@ -2,12 +2,12 @@
 #define OOASM_H
 #include "memory.h"
 #include <cstddef>
+#include <memory>
 
 class Abstract_operation {
 public:
-    virtual void execute (Memory& mem) {
+    virtual void execute (Memory& memory) = 0;
 
-    }
     virtual bool is_declaration () {
         return false;
     }
@@ -15,11 +15,7 @@ public:
 
 class Abstract_element {
 public:
-    virtual int64_t execute (Memory& mem) {
-        return 1;
-    }
-private:
-
+    virtual int64_t execute (Memory& memory) = 0;
 };
 
 class Identifier {
@@ -34,11 +30,11 @@ private:
     std::string id;
 };
 
-class num : public Abstract_element {
+class Num : public Abstract_element {
 public:
-    num (int64_t v) : val(v) {}
+    Num (int64_t v) : val(v) {}
 
-    int64_t execute (Memory& mem) {
+    int64_t execute (Memory&) override {
         return val;
     }
 
@@ -46,217 +42,241 @@ private:
     int64_t val;
 };
 
-class mem : public Abstract_element {
+std::shared_ptr<Num> num(int64_t n) {
+    return std::make_shared<Num>(Num(n));
+}
+
+class Mem : public Abstract_element {
 public:
-    mem (const Abstract_element& a) : addr(a) {}
-    int64_t execute(Memory& mem) {
-        return mem.get_val(addr.execute(mem));
+    Mem (const std::shared_ptr<Abstract_element>& a) : addr(a) {}
+
+    int64_t execute(Memory& memory) override {
+        return memory.get_val(addr->execute(memory));
     }
 
-    uint64_t get_addr(Memory& mem) {
-        return addr.execute(mem);
-    }
-
-private:
-    Abstract_element addr;
-
-};
-
-
-class lea : public Abstract_element {
-public:
-    lea (const Identifier& i) : id(i) {}
-    int64_t execute(Memory& mem) {
-        return mem.get_dec_addr(id.get_id());
+    int64_t get_addr(Memory& memory) {
+        return addr->execute(memory);
     }
 
 private:
-    Identifier id;
+    std::shared_ptr<Abstract_element> addr;
+
 };
 
+std::shared_ptr<Mem> mem(std::shared_ptr<Abstract_element> elem) {
+    return std::make_shared<Mem>(Mem(elem));
+}
 
-class data : public Abstract_operation {
+
+class Lea : public Abstract_element {
 public:
-    data (const Identifier& i, const num& v) : id(i), val(v) {}
+    Lea (const std::shared_ptr<Identifier>& i) : id(i) {}
+    int64_t execute(Memory& memory) override {
+        return memory.get_dec_addr(id->get_id());
+    }
 
-    bool is_declaration () const {
+private:
+    std::shared_ptr<Identifier> id;
+};
+
+std::shared_ptr<Lea> lea(const char* id) {
+    auto new_id = std::make_shared<Identifier>(Identifier(id));
+    return std::make_shared<Lea>(Lea(new_id));
+}
+
+class Data : public Abstract_operation {
+public:
+    Data (const std::shared_ptr<Identifier>& i, const std::shared_ptr<Num>& v) : id(i), val(v) {}
+
+    bool is_declaration () override {
         return true;
     }
 
-    void execute (Memory& mem) {
-
-    }
-private:
-    Identifier id;
-    num val;
-};
-
-class mov : public Abstract_operation {
-public:
-    mov (const mem& dst, const Abstract_element& src) : dst(dst), src(src) {}
-
-    bool is_declaration () const {
-        return false;
-    }
-
-    void execute (Memory& mem) {
-        mem.set_val(dst.get_addr(mem), src.execute(mem));
+    void execute (Memory& memory) override {
+        memory.add_var(id->get_id(), val->execute(memory));
     }
 
 private:
-    mem dst;
-    Abstract_element src;
+    std::shared_ptr<Identifier> id;
+    std::shared_ptr<Num> val;
 };
 
-class add : public Abstract_operation {
+std::shared_ptr<Data> data(const char* id, std::shared_ptr<Num> n) {
+    auto new_id = std::make_shared<Identifier>(Identifier(id));
+    return std::make_shared<Data>(Data(new_id, n));
+}
+
+class Mov : public Abstract_operation {
 public:
-    add (const mem& arg1, const Abstract_element& arg2) : arg1(arg1), arg2(arg2) {}
+    Mov (const std::shared_ptr<Mem>& dst, const std::shared_ptr<Abstract_element>& src) : dst(dst), src(src) {}
 
-    bool is_declaration () const {
-        return false;
-    }
-
-    void execute (Memory& mem) {
-        int64_t res = arg1.execute(mem) + arg2.execute(mem);
-        mem.set_val(arg1.get_addr(mem), res);
-        mem.set_ZF(res);
-        mem.set_SF(res);
+    void execute (Memory& memory) override {
+        memory.set_val(dst->get_addr(memory), src->execute(memory));
     }
 
 private:
-    mem arg1;
-    Abstract_element arg2;
+    std::shared_ptr<Mem> dst;
+    std::shared_ptr<Abstract_element> src;
 };
 
-class sub : public Abstract_operation {
+std::shared_ptr<Mov> mov(std::shared_ptr<Mem> m, std::shared_ptr<Abstract_element> e) {
+    return std::make_shared<Mov>(Mov(m, e));
+}
+
+class Add : public Abstract_operation {
 public:
-    sub (const mem& arg1, const Abstract_element& arg2) : arg1(arg1), arg2(arg2) {}
+    Add (const std::shared_ptr<Mem>& arg1, const std::shared_ptr<Abstract_element>& arg2) : arg1(arg1), arg2(arg2) {}
 
-    bool is_declaration () const {
-        return false;
-    }
-
-    void execute (Memory& mem) {
-        int64_t res = arg1.execute(mem) - arg2.execute(mem);
-        mem.set_val(arg1.get_addr(mem), res);
-        mem.set_ZF(res);
-        mem.set_SF(res);
+    void execute (Memory& memory) override {
+        int64_t res = arg1->execute(memory) + arg2->execute(memory);
+        memory.set_val(arg1->get_addr(memory), res);
+        memory.set_ZF(res);
+        memory.set_SF(res);
     }
 
 private:
-    mem arg1;
-    Abstract_element arg2;
+    std::shared_ptr<Mem> arg1;
+    std::shared_ptr<Abstract_element> arg2;
 };
 
-class inc : public Abstract_operation {
+
+std::shared_ptr<Add> add(std::shared_ptr<Mem> m, std::shared_ptr<Abstract_element> e) {
+    return std::make_shared<Add>(Add(m, e));
+}
+
+class Sub : public Abstract_operation {
 public:
-    inc (const mem& arg) : arg(arg) {}
+    Sub (const std::shared_ptr<Mem>& arg1, const std::shared_ptr<Abstract_element>& arg2) : arg1(arg1), arg2(arg2) {}
 
-    bool is_declaration () const {
-        return false;
-    }
-
-    void execute (Memory& mem) {
-        int64_t res = arg.execute(mem);
-        mem.set_val(arg.get_addr(mem), ++res);
-        mem.set_ZF(res);
-        mem.set_SF(res);
+    void execute (Memory& memory) override {
+        int64_t res = arg1->execute(memory) - arg2->execute(memory);
+        memory.set_val(arg1->get_addr(memory), res);
+        memory.set_ZF(res);
+        memory.set_SF(res);
     }
 
 private:
-    mem arg;
+    std::shared_ptr<Mem> arg1;
+    std::shared_ptr<Abstract_element> arg2;
 };
 
-class dec : public Abstract_operation {
+
+std::shared_ptr<Sub> sub(std::shared_ptr<Mem> m, std::shared_ptr<Abstract_element> e) {
+    return std::make_shared<Sub>(Sub(m, e));
+}
+
+class Inc : public Abstract_operation {
 public:
-    dec (const mem& arg) : arg(arg) {}
+    Inc (const std::shared_ptr<Mem>& arg) : arg(arg) {}
 
-    bool is_declaration () const {
-        return false;
-    }
-
-    void execute (Memory& mem) {
-        int64_t res = arg.execute(mem);
-        mem.set_val(arg.get_addr(mem), --res);
-        mem.set_ZF(res);
-        mem.set_SF(res);
+    void execute (Memory& memory) override {
+        int64_t res = arg->execute(memory);
+        memory.set_val(arg->get_addr(memory), ++res);
+        memory.set_ZF(res);
+        memory.set_SF(res);
     }
 
 private:
-    mem arg;
+    std::shared_ptr<Mem> arg;
 };
 
-class one : public Abstract_operation {
+
+std::shared_ptr<Inc> inc(std::shared_ptr<Mem> m) {
+    return std::make_shared<Inc>(Inc(m));
+}
+
+class Dec : public Abstract_operation {
 public:
-    one (const mem& arg) : arg(arg) {}
+    Dec (const std::shared_ptr<Mem>& arg) : arg(arg) {}
 
-    bool is_declaration () const {
-        return false;
-    }
-
-    void execute (Memory& mem) {
-        mem.set_val(arg.get_addr(mem), 1);
+    void execute (Memory& memory) override {
+        int64_t res = arg->execute(memory);
+        memory.set_val(arg->get_addr(memory), --res);
+        memory.set_ZF(res);
+        memory.set_SF(res);
     }
 
 private:
-    mem arg;
+    std::shared_ptr<Mem> arg;
 };
 
-class onez : public Abstract_operation {
-public:
-    onez (const mem& arg) : arg(arg) {}
+std::shared_ptr<Dec> dec(std::shared_ptr<Mem> m) {
+    return std::make_shared<Dec>(Dec(m));
+}
 
-    bool is_declaration () const {
-        return false;
+class One : public Abstract_operation {
+public:
+    One (const std::shared_ptr<Mem>& arg) : arg(arg) {}
+
+    void execute (Memory& memory) override {
+        memory.set_val(arg->get_addr(memory), 1);
     }
 
-    void execute (Memory& mem) {
-        if (mem.get_ZF()) {
-            mem.set_val(arg.get_addr(mem), 1);
+private:
+    std::shared_ptr<Mem> arg;
+};
+
+std::shared_ptr<One> one(std::shared_ptr<Mem> m) {
+    return std::make_shared<One>(One(m));
+}
+
+class Onez : public Abstract_operation {
+public:
+    Onez (const std::shared_ptr<Mem>& arg) : arg(arg) {}
+
+    void execute (Memory& memory) override {
+        if (memory.get_ZF()) {
+            memory.set_val(arg->get_addr(memory), 1);
         }
     }
 
 private:
-    mem arg;
+    std::shared_ptr<Mem> arg;
 };
 
-class ones : public Abstract_operation {
+std::shared_ptr<Onez> onez(std::shared_ptr<Mem> m) {
+    return std::make_shared<Onez>(Onez(m));
+}
+
+class Ones : public Abstract_operation {
 public:
-    ones (const mem& arg) : arg(arg) {}
+    Ones (const std::shared_ptr<Mem>& arg) : arg(arg) {}
 
-    bool is_declaration () const {
-        return false;
-    }
-
-    void execute (Memory& mem) {
-        if (mem.get_SF()) {
-            mem.set_val(arg.get_addr(mem), 1);
+    void execute (Memory& memory) override {
+        if (memory.get_SF()) {
+            memory.set_val(arg->get_addr(memory), 1);
         }
     }
 
 private:
-    mem arg;
+    std::shared_ptr<Mem> arg;
 };
+
+std::shared_ptr<Ones> ones(std::shared_ptr<Mem> m) {
+    return std::make_shared<Ones>(Ones(m));
+}
 
 class program {
 public:
-    program (std::initializer_list<Abstract_operation>& in) : ops(in) {}
-    program (std::initializer_list<Abstract_operation>&& in) : ops(in) {}
+    program (std::initializer_list<std::shared_ptr<Abstract_operation> >& in) : ops(in) {}
+
+    program (std::initializer_list<std::shared_ptr<Abstract_operation> >&& in) : ops(in) {}
+
     void execute(Memory& mem) const {
         for (auto i : ops) {
-            if (i.is_declaration()) {
-                i.execute(mem);
+            if (i->is_declaration()) {
+                i->execute(mem);
             }
         }
 
         for (auto i : ops) {
-            if (!i.is_declaration()) {
-                i.execute(mem);
+            if (!i->is_declaration()) {
+                i->execute(mem);
             }
         }
     }
 
 private:
-    std::vector<Abstract_operation> ops;
+    std::vector<std::shared_ptr<Abstract_operation> > ops;
 };
 #endif // OOASM_H

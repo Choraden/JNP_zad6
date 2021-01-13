@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include <sstream>
-
+#include <iostream> // only for test purposes
 class Memory {
 private:
     using val_t = int64_t;
@@ -53,13 +53,14 @@ public:
     }
 
     void set_SF (int64_t res) {
-        SF = (res >= 0);
+        SF = (res < 0);
     }
 
     void memory_dump(std::stringstream& ss) const {
         for (auto i : values) {
-            ss << i;
+            ss << i << " ";
         }
+
     }
 
 private:
