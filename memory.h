@@ -14,7 +14,7 @@ private:
     using flag_t = bool;
 
 public:
-    Memory (uint64_t size) : values(size, 0), declarations(), ZF(true), SF(false), last_elem(0) {}
+    Memory (uint64_t size) : values(size, 0), declarations(), ZF(false), SF(false), last_elem(0) {}
 
     val_t get_val (addr_t index) {
         return values[index];

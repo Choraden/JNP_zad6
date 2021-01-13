@@ -7,7 +7,7 @@ public:
     Computer (uint64_t size) : memory(size) {}
 
     void boot(const program& p) {
-        p.execute(mem);
+        p.execute(memory);
     }
 
     void memory_dump(std::stringstream& ss) const {
