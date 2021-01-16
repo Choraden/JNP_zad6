@@ -1,7 +1,6 @@
 #ifndef OOASM_H
 #define OOASM_H
 #include "memory.h"
-#include <cstddef>
 #include <memory>
 
 class Abstract_operation {
@@ -15,31 +14,47 @@ public:
 
 class Abstract_element {
 public:
-    virtual int64_t execute (Memory& memory) = 0;
+    using val_t = int64_t;
+    using addr_t = uint64_t;
+    using flag_t = bool;
+    using var_name = std::string;
+
+    virtual val_t execute (Memory& memory) = 0;
+};
+
+
+class Invalid_id : public std::exception {
+public:
+    const char *what() const noexcept override {
+        return "Invalid id";
+    }
 };
 
 class Identifier {
+private:
+    using var_name = std::string;
+
 public:
     Identifier (const char* str) : id(str) {}
 
-    const std::string& get_id () const {
+    const var_name& get_name () const {
         return id;
     }
 
 private:
-    std::string id;
+    var_name id;
 };
 
 class Num : public Abstract_element {
 public:
-    Num (int64_t v) : val(v) {}
+    Num (val_t v) : val(v) {}
 
-    int64_t execute (Memory&) override {
+    val_t execute (Memory&) override {
         return val;
     }
 
 private:
-    int64_t val;
+    val_t val;
 };
 
 std::shared_ptr<Num> num(int64_t n) {
@@ -50,11 +65,11 @@ class Mem : public Abstract_element {
 public:
     Mem (const std::shared_ptr<Abstract_element>& a) : addr(a) {}
 
-    int64_t execute(Memory& memory) override {
+    val_t execute(Memory& memory) override {
         return memory.get_val(addr->execute(memory));
     }
 
-    int64_t get_addr(Memory& memory) {
+    val_t get_addr(Memory& memory) {
         return addr->execute(memory);
     }
 
@@ -71,8 +86,8 @@ std::shared_ptr<Mem> mem(std::shared_ptr<Abstract_element> elem) {
 class Lea : public Abstract_element {
 public:
     Lea (const std::shared_ptr<Identifier>& i) : id(i) {}
-    int64_t execute(Memory& memory) override {
-        return memory.get_dec_addr(id->get_id());
+    val_t execute(Memory& memory) override {
+        return memory.get_dec_addr(id->get_name());
     }
 
 private:
@@ -93,7 +108,12 @@ public:
     }
 
     void execute (Memory& memory) override {
-        memory.add_var(id->get_id(), val->execute(memory));
+        auto len = id->get_name().size();
+        if (len < 1 || len > 10) {
+            throw Invalid_id();
+        }
+
+        memory.add_var(id->get_name(), val->execute(memory));
     }
 
 private:
@@ -128,10 +148,9 @@ public:
     Add (const std::shared_ptr<Mem>& arg1, const std::shared_ptr<Abstract_element>& arg2) : arg1(arg1), arg2(arg2) {}
 
     void execute (Memory& memory) override {
-        int64_t res = arg1->execute(memory) + arg2->execute(memory);
+        auto res = arg1->execute(memory) + arg2->execute(memory);
         memory.set_val(arg1->get_addr(memory), res);
-        memory.set_ZF(res);
-        memory.set_SF(res);
+        memory.set_flags(res);
     }
 
 private:
@@ -149,10 +168,9 @@ public:
     Sub (const std::shared_ptr<Mem>& arg1, const std::shared_ptr<Abstract_element>& arg2) : arg1(arg1), arg2(arg2) {}
 
     void execute (Memory& memory) override {
-        int64_t res = arg1->execute(memory) - arg2->execute(memory);
+        auto res = arg1->execute(memory) - arg2->execute(memory);
         memory.set_val(arg1->get_addr(memory), res);
-        memory.set_ZF(res);
-        memory.set_SF(res);
+        memory.set_flags(res);
     }
 
 private:
@@ -170,10 +188,9 @@ public:
     Inc (const std::shared_ptr<Mem>& arg) : arg(arg) {}
 
     void execute (Memory& memory) override {
-        int64_t res = arg->execute(memory);
+        auto res = arg->execute(memory);
         memory.set_val(arg->get_addr(memory), ++res);
-        memory.set_ZF(res);
-        memory.set_SF(res);
+        memory.set_flags(res);
     }
 
 private:
@@ -190,10 +207,9 @@ public:
     Dec (const std::shared_ptr<Mem>& arg) : arg(arg) {}
 
     void execute (Memory& memory) override {
-        int64_t res = arg->execute(memory);
+        auto res = arg->execute(memory);
         memory.set_val(arg->get_addr(memory), --res);
-        memory.set_ZF(res);
-        memory.set_SF(res);
+        memory.set_flags(res);
     }
 
 private:

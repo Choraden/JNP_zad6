@@ -3,8 +3,11 @@
 #include "ooasm.h"
 
 class Computer {
+private:
+    using addr_t = uint64_t;
+
 public:
-    Computer (uint64_t size) : memory(size) {}
+    Computer (addr_t size) : memory(size) {}
 
     void boot(const program& p) {
         p.execute(memory);
