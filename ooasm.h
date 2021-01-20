@@ -3,22 +3,23 @@
 #include "memory.h"
 #include <memory>
 
+
+/* Chcialbym cos z tym usingiem zrobic,
+ * ale nie mam lepszego pomyslu niz umieszczenie go tutaj. */
+using val_t = int64_t;
+
+
 class Abstract_operation {
 public:
     virtual void execute (Memory& memory) = 0;
 
-    virtual bool is_declaration () {
+    virtual bool is_declaration () const noexcept {
         return false;
     }
 };
 
 class Abstract_element {
 public:
-    using val_t = int64_t;
-    using addr_t = uint64_t;
-    using flag_t = bool;
-    using var_name = std::string;
-
     virtual val_t execute (Memory& memory) = 0;
 };
 
@@ -26,7 +27,7 @@ public:
 class Invalid_id : public std::exception {
 public:
     const char *what() const noexcept override {
-        return "Invalid id";
+        return "invalid id";
     }
 };
 
@@ -57,7 +58,7 @@ private:
     val_t val;
 };
 
-std::shared_ptr<Num> num(int64_t n) {
+std::shared_ptr<Num> num(val_t n) {
     return std::make_shared<Num>(Num(n));
 }
 
@@ -69,7 +70,7 @@ public:
         return memory.get_val(addr->execute(memory));
     }
 
-    val_t get_addr(Memory& memory) {
+    val_t get_addr(Memory& memory) const {
         return addr->execute(memory);
     }
 
@@ -103,7 +104,7 @@ class Data : public Abstract_operation {
 public:
     Data (const std::shared_ptr<Identifier>& i, const std::shared_ptr<Num>& v) : id(i), val(v) {}
 
-    bool is_declaration () override {
+    bool is_declaration () const noexcept override {
         return true;
     }
 

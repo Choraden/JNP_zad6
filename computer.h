@@ -13,7 +13,7 @@ public:
         p.execute(memory);
     }
 
-    void memory_dump(std::stringstream& ss) const {
+    void memory_dump(std::stringstream& ss) const noexcept {
             memory.memory_dump(ss);
     }
 
