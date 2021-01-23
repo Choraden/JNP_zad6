@@ -9,16 +9,20 @@ using val_t = int64_t;
 
 class Abstract_operation {
 public:
-    inline virtual void execute(Memory &memory) = 0;
+    virtual void execute(Memory &memory) = 0;
 
     inline virtual bool is_declaration() const noexcept {
         return false;
     }
+
+    virtual ~Abstract_operation() = default;
 };
 
 class Abstract_element {
 public:
-    inline virtual val_t execute(Memory &memory) = 0;
+    virtual val_t execute(Memory &memory) = 0;
+
+    virtual ~Abstract_element() = default;
 };
 
 

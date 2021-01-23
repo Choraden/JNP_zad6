@@ -5,7 +5,6 @@
 #include <vector>
 #include <map>
 #include <sstream>
-#include <iostream> // only for test purposes
 
 class Invalid_index : public std::exception {
 public:
