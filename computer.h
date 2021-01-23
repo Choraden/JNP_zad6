@@ -1,5 +1,6 @@
 #ifndef COMPUTER_H
 #define COMPUTER_H
+
 #include "ooasm.h"
 
 class Computer {
@@ -7,14 +8,14 @@ private:
     using addr_t = uint64_t;
 
 public:
-    Computer (addr_t size) : memory(size) {}
+    Computer(addr_t size) : memory(size) {}
 
-    void boot(const program& p) {
+    inline void boot(const program &p) {
         p.execute(memory);
     }
 
-    void memory_dump(std::stringstream& ss) const noexcept {
-            memory.memory_dump(ss);
+    inline void memory_dump(std::stringstream &ss) const noexcept {
+        memory.memory_dump(ss);
     }
 
 private:
