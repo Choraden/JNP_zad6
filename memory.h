@@ -33,7 +33,6 @@ public:
     Memory(addr_t size) : values(size, 0), declarations(), ZF(false), SF(false), elem_number(0) {}
 
     inline void init() {
-        ZF = SF = false;
         for (auto &v : values) {
             v = 0;
         }

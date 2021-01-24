@@ -81,7 +81,7 @@ private:
 
 };
 
-inline std::shared_ptr<Mem> mem(std::shared_ptr<Abstract_element> elem) {
+inline std::shared_ptr<Mem> mem(const std::shared_ptr<Abstract_element> &elem) {
     return std::make_shared<Mem>(Mem(elem));
 }
 
