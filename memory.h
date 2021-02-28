@@ -81,7 +81,7 @@ public:
     }
 
     inline void set_flags(val_t res) noexcept {
-        ZF = res;
+        ZF = res == 0;
         SF = res < 0;
     }
 

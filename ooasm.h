@@ -60,13 +60,13 @@ private:
     val_t val;
 };
 
-inline std::shared_ptr<Num> num(val_t n) {
+inline std::shared_ptr <Num> num(val_t n) {
     return std::make_shared<Num>(Num(n));
 }
 
 class Mem : public Abstract_element {
 public:
-    Mem(const std::shared_ptr<Abstract_element> &a) : addr(a) {}
+    Mem(const std::shared_ptr <Abstract_element> &a) : addr(a) {}
 
     inline val_t execute(Memory &memory) override {
         return memory.get_val(addr->execute(memory));
@@ -77,35 +77,35 @@ public:
     }
 
 private:
-    std::shared_ptr<Abstract_element> addr;
+    std::shared_ptr <Abstract_element> addr;
 
 };
 
-inline std::shared_ptr<Mem> mem(const std::shared_ptr<Abstract_element> &elem) {
+inline std::shared_ptr <Mem> mem(const std::shared_ptr <Abstract_element> &elem) {
     return std::make_shared<Mem>(Mem(elem));
 }
 
 
 class Lea : public Abstract_element {
 public:
-    Lea(const std::shared_ptr<Identifier> &i) : id(i) {}
+    Lea(const std::shared_ptr <Identifier> &i) : id(i) {}
 
     inline val_t execute(Memory &memory) override {
         return memory.get_dec_addr(id->get_name());
     }
 
 private:
-    std::shared_ptr<Identifier> id;
+    std::shared_ptr <Identifier> id;
 };
 
-inline std::shared_ptr<Lea> lea(const char *id) {
+inline std::shared_ptr <Lea> lea(const char *id) {
     auto new_id = std::make_shared<Identifier>(Identifier(id));
     return std::make_shared<Lea>(Lea(new_id));
 }
 
 class Data : public Abstract_operation {
 public:
-    Data(const std::shared_ptr<Identifier> &i, const std::shared_ptr<Num> &v) : id(i), val(v) {}
+    Data(const std::shared_ptr <Identifier> &i, const std::shared_ptr <Num> &v) : id(i), val(v) {}
 
     inline bool is_declaration() const noexcept override {
         return true;
@@ -121,35 +121,35 @@ public:
     }
 
 private:
-    std::shared_ptr<Identifier> id;
-    std::shared_ptr<Num> val;
+    std::shared_ptr <Identifier> id;
+    std::shared_ptr <Num> val;
 };
 
-inline std::shared_ptr<Data> data(const char *id, const std::shared_ptr<Num> &n) {
+inline std::shared_ptr <Data> data(const char *id, const std::shared_ptr <Num> &n) {
     auto new_id = std::make_shared<Identifier>(Identifier(id));
     return std::make_shared<Data>(Data(new_id, n));
 }
 
 class Mov : public Abstract_operation {
 public:
-    Mov(const std::shared_ptr<Mem> &dst, const std::shared_ptr<Abstract_element> &src) : dst(dst), src(src) {}
+    Mov(const std::shared_ptr <Mem> &dst, const std::shared_ptr <Abstract_element> &src) : dst(dst), src(src) {}
 
     inline void execute(Memory &memory) override {
         memory.set_val(dst->get_addr(memory), src->execute(memory));
     }
 
 private:
-    std::shared_ptr<Mem> dst;
-    std::shared_ptr<Abstract_element> src;
+    std::shared_ptr <Mem> dst;
+    std::shared_ptr <Abstract_element> src;
 };
 
-inline std::shared_ptr<Mov> mov(const std::shared_ptr<Mem> &m, const std::shared_ptr<Abstract_element> &e) {
+inline std::shared_ptr <Mov> mov(const std::shared_ptr <Mem> &m, const std::shared_ptr <Abstract_element> &e) {
     return std::make_shared<Mov>(Mov(m, e));
 }
 
 class Add : public Abstract_operation {
 public:
-    Add(const std::shared_ptr<Mem> &arg1, const std::shared_ptr<Abstract_element> &arg2) : arg1(arg1), arg2(arg2) {}
+    Add(const std::shared_ptr <Mem> &arg1, const std::shared_ptr <Abstract_element> &arg2) : arg1(arg1), arg2(arg2) {}
 
     inline void execute(Memory &memory) override {
         auto res = arg1->execute(memory) + arg2->execute(memory);
@@ -158,18 +158,18 @@ public:
     }
 
 private:
-    std::shared_ptr<Mem> arg1;
-    std::shared_ptr<Abstract_element> arg2;
+    std::shared_ptr <Mem> arg1;
+    std::shared_ptr <Abstract_element> arg2;
 };
 
 
-inline std::shared_ptr<Add> add(const std::shared_ptr<Mem> &m, const std::shared_ptr<Abstract_element> &e) {
+inline std::shared_ptr <Add> add(const std::shared_ptr <Mem> &m, const std::shared_ptr <Abstract_element> &e) {
     return std::make_shared<Add>(Add(m, e));
 }
 
 class Sub : public Abstract_operation {
 public:
-    Sub(const std::shared_ptr<Mem> &arg1, const std::shared_ptr<Abstract_element> &arg2) : arg1(arg1), arg2(arg2) {}
+    Sub(const std::shared_ptr <Mem> &arg1, const std::shared_ptr <Abstract_element> &arg2) : arg1(arg1), arg2(arg2) {}
 
     inline void execute(Memory &memory) override {
         auto res = arg1->execute(memory) - arg2->execute(memory);
@@ -178,18 +178,18 @@ public:
     }
 
 private:
-    std::shared_ptr<Mem> arg1;
-    std::shared_ptr<Abstract_element> arg2;
+    std::shared_ptr <Mem> arg1;
+    std::shared_ptr <Abstract_element> arg2;
 };
 
 
-inline std::shared_ptr<Sub> sub(const std::shared_ptr<Mem> &m, const std::shared_ptr<Abstract_element> &e) {
+inline std::shared_ptr <Sub> sub(const std::shared_ptr <Mem> &m, const std::shared_ptr <Abstract_element> &e) {
     return std::make_shared<Sub>(Sub(m, e));
 }
 
 class Inc : public Abstract_operation {
 public:
-    Inc(const std::shared_ptr<Mem> &arg) : arg(arg) {}
+    Inc(const std::shared_ptr <Mem> &arg) : arg(arg) {}
 
     inline void execute(Memory &memory) override {
         auto res = arg->execute(memory);
@@ -198,17 +198,17 @@ public:
     }
 
 private:
-    std::shared_ptr<Mem> arg;
+    std::shared_ptr <Mem> arg;
 };
 
 
-inline std::shared_ptr<Inc> inc(const std::shared_ptr<Mem> &m) {
+inline std::shared_ptr <Inc> inc(const std::shared_ptr <Mem> &m) {
     return std::make_shared<Inc>(Inc(m));
 }
 
 class Dec : public Abstract_operation {
 public:
-    Dec(const std::shared_ptr<Mem> &arg) : arg(arg) {}
+    Dec(const std::shared_ptr <Mem> &arg) : arg(arg) {}
 
     inline void execute(Memory &memory) override {
         auto res = arg->execute(memory);
@@ -217,32 +217,32 @@ public:
     }
 
 private:
-    std::shared_ptr<Mem> arg;
+    std::shared_ptr <Mem> arg;
 };
 
-inline std::shared_ptr<Dec> dec(const std::shared_ptr<Mem> &m) {
+inline std::shared_ptr <Dec> dec(const std::shared_ptr <Mem> &m) {
     return std::make_shared<Dec>(Dec(m));
 }
 
 class One : public Abstract_operation {
 public:
-    One(const std::shared_ptr<Mem> &arg) : arg(arg) {}
+    One(const std::shared_ptr <Mem> &arg) : arg(arg) {}
 
     inline void execute(Memory &memory) override {
         memory.set_val(arg->get_addr(memory), 1);
     }
 
 private:
-    std::shared_ptr<Mem> arg;
+    std::shared_ptr <Mem> arg;
 };
 
-inline std::shared_ptr<One> one(const std::shared_ptr<Mem> &m) {
+inline std::shared_ptr <One> one(const std::shared_ptr <Mem> &m) {
     return std::make_shared<One>(One(m));
 }
 
 class Onez : public Abstract_operation {
 public:
-    Onez(const std::shared_ptr<Mem> &arg) : arg(arg) {}
+    Onez(const std::shared_ptr <Mem> &arg) : arg(arg) {}
 
     inline void execute(Memory &memory) override {
         if (memory.get_ZF()) {
@@ -251,16 +251,16 @@ public:
     }
 
 private:
-    std::shared_ptr<Mem> arg;
+    std::shared_ptr <Mem> arg;
 };
 
-inline std::shared_ptr<Onez> onez(const std::shared_ptr<Mem> &m) {
+inline std::shared_ptr <Onez> onez(const std::shared_ptr <Mem> &m) {
     return std::make_shared<Onez>(Onez(m));
 }
 
 class Ones : public Abstract_operation {
 public:
-    Ones(const std::shared_ptr<Mem> &arg) : arg(arg) {}
+    Ones(const std::shared_ptr <Mem> &arg) : arg(arg) {}
 
     inline void execute(Memory &memory) override {
         if (memory.get_SF()) {
@@ -269,16 +269,16 @@ public:
     }
 
 private:
-    std::shared_ptr<Mem> arg;
+    std::shared_ptr <Mem> arg;
 };
 
-inline std::shared_ptr<Ones> ones(const std::shared_ptr<Mem> &m) {
+inline std::shared_ptr <Ones> ones(const std::shared_ptr <Mem> &m) {
     return std::make_shared<Ones>(Ones(m));
 }
 
 class program {
 public:
-    program(std::initializer_list<std::shared_ptr<Abstract_operation> > &&in) : ops(in) {}
+    program(std::initializer_list <std::shared_ptr<Abstract_operation>> &&in) : ops(in) {}
 
     inline void execute(Memory &mem) const {
         mem.init();
@@ -295,7 +295,7 @@ public:
     }
 
 private:
-    std::vector<std::shared_ptr<Abstract_operation> > ops;
+    std::vector <std::shared_ptr<Abstract_operation>> ops;
 };
 
 #endif // OOASM_H
